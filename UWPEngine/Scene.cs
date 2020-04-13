@@ -7,10 +7,12 @@ namespace UWPEngine {
     public class Scene : NotifyPropertyChangedBase {
         private readonly byte[] backBuffer;
 
+        private Camera camera;
         private ObservableCollection<Mesh> meshes;
         private WriteableBitmap bitmap;
 
         public Scene() {
+            Camera = new Camera();
             Meshes = new ObservableCollection<Mesh>();
             Bitmap = new WriteableBitmap(720, 480);
 
@@ -20,6 +22,16 @@ namespace UWPEngine {
         }
 
         public byte[] BackBuffer => backBuffer;
+
+        public Camera Camera {
+            get => camera;
+            set {
+                if (camera != value) {
+                    camera = value;
+                    OnPropertyChanged(nameof(Camera));
+                }
+            }
+        }
 
         public ObservableCollection<Mesh> Meshes {
             get => meshes;

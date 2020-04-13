@@ -8,12 +8,9 @@ using Windows.Storage;
 namespace UWPEngine {
     public class MainPageViewModel : NotifyPropertyChangedBase {
         private Device device;
-        private Camera camera;
         private Mesh mesh;
 
         public MainPageViewModel() {
-            Camera = new Camera();
-
             Device = new Device {
                 Scene = new Scene(),
             };
@@ -21,9 +18,6 @@ namespace UWPEngine {
             mesh = new Cube();
 
             Scene.Meshes.Add(mesh);
-
-            Camera.Position = new Vector3(0, 0, 10.0f);
-            Camera.Target = Vector3.Zero;
         }
 
         public Device Device {
@@ -33,21 +27,14 @@ namespace UWPEngine {
                     device = value;
                     OnPropertyChanged(nameof(Device));
                     OnPropertyChanged(nameof(Scene));
+                    OnPropertyChanged(nameof(Camera));
                 }
             }
         }
 
         public Scene Scene => Device.Scene;
 
-        public Camera Camera {
-            get => camera;
-            set {
-                if (camera != value) {
-                    camera = value;
-                    OnPropertyChanged(nameof(Camera));
-                }
-            }
-        }
+        public Camera Camera => Device.Scene.Camera;
 
         // Rendering loop handler
         public void CompositionTarget_Rendering(object sender, object e) {
@@ -60,7 +47,7 @@ namespace UWPEngine {
                 mesh.Rotation.Z);
 
             // Doing the various matrix operations
-            Device.Render(Camera, Scene);
+            Device.Render();
             // Flushing the back buffer into the front buffer
             Device.Present();
         }

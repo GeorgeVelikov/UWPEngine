@@ -9,20 +9,20 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace UWPEngine {
     public class Device : NotifyPropertyChangedBase {
-        private Scene currentScene;
+        private Scene scene;
 
         public Device() {
         }
 
         public Scene Scene {
-            get => currentScene;
+            get => scene;
             set {
                 if (value?.Bitmap == null || (!value?.BackBuffer?.Any() ?? true) ) {
                     return;
                 }
 
-                if (currentScene != value) {
-                    currentScene = value;
+                if (scene != value) {
+                    scene = value;
                     OnPropertyChanged(nameof(Scene));
                     OnPropertyChanged(nameof(BackBuffer));
                     OnPropertyChanged(nameof(Bitmap));
@@ -133,14 +133,14 @@ namespace UWPEngine {
 
         // The main method of the engine that re-compute each vertex projection
         // during each frame
-        public void Render(Camera camera, Scene scene) {
+        public void Render() {
             // To understand this part, please read the prerequisites resources
-            Matrix viewMatrix = Matrix.LookAtLH(camera.Position, camera.Target, Vector3.UnitY);
+            Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
 
             Matrix projectionMatrix =
                 Matrix.PerspectiveFovRH(0.78f, (float)Bitmap.PixelWidth / Bitmap.PixelHeight, 0.01f, 1.0f);
 
-            foreach (Mesh mesh in scene.Meshes) {
+            foreach (Mesh mesh in Scene.Meshes) {
                 // Beware to apply rotation before translation
                 Matrix worldMatrix =
                     Matrix.RotationYawPitchRoll(mesh.Rotation.Y, mesh.Rotation.X, mesh.Rotation.Z)
