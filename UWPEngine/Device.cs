@@ -1,8 +1,8 @@
 ﻿using SharpDX;
-using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using UWPEngine.Shapes;
 using UWPEngine.Utility;
 using Windows.UI.Xaml.Media.Imaging;
@@ -24,8 +24,9 @@ namespace UWPEngine {
                 if (scene != value) {
                     scene = value;
                     OnPropertyChanged(nameof(Scene));
-                    OnPropertyChanged(nameof(BackBuffer));
                     OnPropertyChanged(nameof(Bitmap));
+                    OnPropertyChanged(nameof(BackBuffer));
+                    OnPropertyChanged(nameof(DepthBuffer));
                 }
             }
         }
@@ -34,6 +35,7 @@ namespace UWPEngine {
 
         public byte[] BackBuffer => Scene.BackBuffer;
 
+        public float[] DepthBuffer => Scene.DepthBuffer;
 
         public void Clear(byte r, byte g, byte b, byte a) {
             for (var index = 0; index < BackBuffer.Length; index += 4) {
@@ -42,6 +44,10 @@ namespace UWPEngine {
                 BackBuffer[index + 1] = g;
                 BackBuffer[index + 2] = r;
                 BackBuffer[index + 3] = a;
+            }
+
+            for (var index = 0; index < DepthBuffer.Length; index++) {
+                DepthBuffer[index] = float.MaxValue;
             }
         }
 
@@ -72,14 +78,20 @@ namespace UWPEngine {
             int startingX = (int)MathUtility.Interpolate(pointA.X, pointB.X, gradient1);
             int endingX = (int)MathUtility.Interpolate(pointC.X, pointD.X, gradient2);
 
+            float startingZ = MathUtility.Interpolate(pointA.Z, pointB.Z, gradient1);
+            float endingZ = MathUtility.Interpolate(pointC.Z, pointD.Z, gradient2);
+
             // drawing a line from left (sx) to right (ex)
-            for (var currentX = startingX; currentX < endingX; currentX++) {
-                DrawPoint(new Vector2(currentX, y), color);
+            for (int currentX = startingX; currentX < endingX; currentX++) {
+                float gradient = (currentX - startingX) / (float)(endingX - startingX);
+
+                float z = MathUtility.Interpolate(startingZ, endingZ, gradient);
+
+                DrawPoint(new Vector3(currentX, y, z), color);
             }
         }
 
-        // Project takes some 3D coordinates and transform them
-        // in 2D coordinates using the transformation matrix
+        // Project takes some 3D coordinates and transform them in 2D coordinates using the transformation matrix
         public Vector3 Project(Vector3 coord, Matrix transMat) {
             // transforming the coordinates
             Vector3 point = Vector3.TransformCoordinate(coord, transMat);
@@ -93,63 +105,70 @@ namespace UWPEngine {
         }
 
         // Called to put a pixel on screen at a specific X,Y coordinates
-        public void PutPixel(int x, int y, Color4 color) {
+        public void PutPixel(int x, int y, float z, Color4 color) {
             // As we have a 1-D Array for our back buffer
             // we need to know the equivalent cell in 1-D based
             // on the 2D coordinates on screen
-            int index = (x + y * Bitmap.PixelWidth) * 4;
+            int depthBufferIndex = x + y * Bitmap.PixelWidth;
+            int backBufferIndex = depthBufferIndex * 4;
 
-            BackBuffer[index] = (byte)(color.Blue * 255);
-            BackBuffer[index + 1] = (byte)(color.Green * 255);
-            BackBuffer[index + 2] = (byte)(color.Red * 255);
-            BackBuffer[index + 3] = (byte)(color.Alpha * 255);
+            if (DepthBuffer[depthBufferIndex] < z) {
+                return;
+            }
+
+            DepthBuffer[depthBufferIndex] = z;
+
+            BackBuffer[backBufferIndex] = (byte)(color.Blue * 255);
+            BackBuffer[backBufferIndex + 1] = (byte)(color.Green * 255);
+            BackBuffer[backBufferIndex + 2] = (byte)(color.Red * 255);
+            BackBuffer[backBufferIndex + 3] = (byte)(color.Alpha * 255);
         }
 
         // DrawPoint calls PutPixel but does the clipping operation before
-        public void DrawPoint(Vector2 point, Color4 color) {
+        public void DrawPoint(Vector3 point, Color4 color) {
             // Clipping what's visible on screen
             if (point.X >= 0
                 && point.Y >= 0
                 && point.X < Bitmap.PixelWidth
                 && point.Y < Bitmap.PixelHeight) {
 
-                PutPixel((int)point.X, (int)point.Y, color);
+                PutPixel((int)point.X, (int)point.Y, point.Z, color);
             }
         }
 
-        public void DrawLine(Vector2 pointFrom, Vector2 pointTo, Color4 color) {
-            // Bresenham’s line algorithm
-            int fromX = (int)pointFrom.X;
-            int fromY = (int)pointFrom.Y;
-            int toX = (int)pointTo.X;
-            int toY = (int)pointTo.Y;
+        //public void DrawLine(Vector2 pointFrom, Vector2 pointTo, Color4 color) {
+        //    // Bresenham’s line algorithm
+        //    int fromX = (int)pointFrom.X;
+        //    int fromY = (int)pointFrom.Y;
+        //    int toX = (int)pointTo.X;
+        //    int toY = (int)pointTo.Y;
 
-            int dx = Math.Abs(toX - fromX);
-            int dy = Math.Abs(toY - fromY);
-            int sx = (fromX < toX) ? 1 : -1;
-            int sy = (fromY < toY) ? 1 : -1;
-            int err = dx - dy;
+        //    int dx = Math.Abs(toX - fromX);
+        //    int dy = Math.Abs(toY - fromY);
+        //    int sx = (fromX < toX) ? 1 : -1;
+        //    int sy = (fromY < toY) ? 1 : -1;
+        //    int err = dx - dy;
 
-            while (true) {
-                DrawPoint(new Vector2(fromX, fromY), color);
+        //    while (true) {
+        //        DrawPoint(new Vector2(fromX, fromY), color);
 
-                if ((fromX == toX) && (fromY == toY)) {
-                    break;
-                }
+        //        if ((fromX == toX) && (fromY == toY)) {
+        //            break;
+        //        }
 
-                int e2 = 2 * err;
+        //        int e2 = 2 * err;
 
-                if (e2 > -dy) {
-                    err -= dy;
-                    fromX += sx;
-                }
+        //        if (e2 > -dy) {
+        //            err -= dy;
+        //            fromX += sx;
+        //        }
 
-                if (e2 < dx) {
-                    err += dx;
-                    fromY += sy;
-                }
-            }
-        }
+        //        if (e2 < dx) {
+        //            err += dx;
+        //            fromY += sy;
+        //        }
+        //    }
+        //}
 
         public void DrawTriangle(Vector3 pointA, Vector3 pointB, Vector3 pointC, Color4 color) {
             // Sorting the points in order to always have this order on screen p1, p2 & p3
@@ -163,22 +182,12 @@ namespace UWPEngine {
                 (pointB, pointC) = (pointC, pointB);
             }
 
-            if (pointA.Y > pointC.Y) {
-                (pointA, pointC) = (pointC, pointA);
+            if (pointA.Y > pointB.Y) {
+                (pointA, pointB) = (pointB, pointA);
             }
 
-            // http://en.wikipedia.org/wiki/Slope
-            // Computing inverse slopes
-            float dPointAPointB = (pointB.Y - pointA.Y > 0)
-                ? ((pointB.X - pointA.X) / (pointB.Y - pointA.Y))
-                : 0;
-
-            float dPointAPointC = (pointC.Y - pointA.Y > 0)
-                ? ((pointC.X - pointA.X) / (pointC.Y - pointA.Y))
-                : 0;
-
-            // Case where triangles are <|
-            if (dPointAPointB > dPointAPointC) {
+            // Case where triangles are |>
+            if (MathUtility.LineSide2D(pointB, pointA, pointC) > 0) {
                 for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
                     if (y < pointB.Y) {
                         ProcessScanLine(y, pointA, pointC, pointA, pointB, color);
@@ -187,7 +196,7 @@ namespace UWPEngine {
                     }
                 }
             }
-            // Case where triangles are |>
+            // Case where triangles are <|
             else {
                 for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
                     if (y < pointB.Y) {
@@ -206,7 +215,7 @@ namespace UWPEngine {
             Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
 
             Matrix projectionMatrix =
-                Matrix.PerspectiveFovRH(0.90f, (float)Bitmap.PixelWidth / Bitmap.PixelHeight, 0.01f, 1.0f);
+                Matrix.PerspectiveFovRH(0.78f, (float)Bitmap.PixelWidth / Bitmap.PixelHeight, 0.01f, 1.0f);
 
             foreach (Mesh mesh in Scene.Meshes) {
                 // Beware to apply rotation before translation

@@ -6,6 +6,7 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace UWPEngine {
     public class Scene : NotifyPropertyChangedBase {
         private readonly byte[] backBuffer;
+        private readonly float[] depthBuffer;
 
         private Camera camera;
         private ObservableCollection<Mesh> meshes;
@@ -19,9 +20,12 @@ namespace UWPEngine {
             // the back buffer size is equal to the number of pixels to draw
             // on screen (width*height) * 4 (R,G,B & Alpha values).
             backBuffer = new byte[Bitmap.PixelWidth * Bitmap.PixelHeight * 4];
+            depthBuffer = new float[Bitmap.PixelWidth * Bitmap.PixelHeight];
         }
 
         public byte[] BackBuffer => backBuffer;
+
+        public float[] DepthBuffer => depthBuffer;
 
         public Camera Camera {
             get => camera;

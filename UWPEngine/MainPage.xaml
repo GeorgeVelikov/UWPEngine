@@ -62,16 +62,9 @@
             x:Name="FrontBufferImage"
             Source="{Binding Scene.Bitmap}" />
 
-        <ListView
-            Background="DarkGray"
+        <controls:MeshControlList
+            DataContext="{Binding Scene}"
             Grid.Row="2"
-            Grid.Column="1"
-            ItemsSource="{Binding Scene.Meshes}">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <controls:MeshControl />
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+            Grid.Column="1" />
     </Grid>
 </Page>

@@ -123,6 +123,9 @@
     <Compile Include="Controls\MeshControl.xaml.cs">
       <DependentUpon>MeshControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\MeshControlList.xaml.cs">
+      <DependentUpon>MeshControlList.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainPageViewModel.cs" />
     <Compile Include="Scene.cs" />
     <Compile Include="Shapes\Cube.cs" />
@@ -158,6 +161,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="Controls\MeshControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\MeshControlList.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
