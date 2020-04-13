@@ -51,7 +51,6 @@
             </MenuBarItem>
         </MenuBar>
 
-
         <StackPanel
             Grid.Row="1"
             Grid.ColumnSpan="2"

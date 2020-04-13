@@ -134,6 +134,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utility\BabylonFile.cs" />
     <Compile Include="Utility\FileUtility.cs" />
+    <Compile Include="Utility\MathUtility.cs" />
     <Compile Include="Utility\NotifyPropertyChangedBase.cs" />
   </ItemGroup>
   <ItemGroup>

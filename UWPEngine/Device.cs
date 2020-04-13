@@ -57,6 +57,41 @@ namespace UWPEngine {
             Bitmap.Invalidate();
         }
 
+        void ProcessScanLine(int y, Vector3 pointA, Vector3 pointB, Vector3 pointC, Vector3 pointD, Color4 color) {
+            // Thanks to current Y, we can compute the gradient to compute others values like
+            // the starting X (sx) and ending X (ex) to draw between
+            // if pa.Y == pb.Y or pc.Y == pd.Y, gradient is forced to 1
+            var gradient1 = pointA.Y != pointB.Y
+                ? (y - pointA.Y) / (pointB.Y - pointA.Y)
+                : 1;
+
+            var gradient2 = pointC.Y != pointD.Y
+                ? (y - pointC.Y) / (pointD.Y - pointC.Y)
+                : 1;
+
+            int startingX = (int)MathUtility.Interpolate(pointA.X, pointB.X, gradient1);
+            int endingX = (int)MathUtility.Interpolate(pointC.X, pointD.X, gradient2);
+
+            // drawing a line from left (sx) to right (ex)
+            for (var currentX = startingX; currentX < endingX; currentX++) {
+                DrawPoint(new Vector2(currentX, y), color);
+            }
+        }
+
+        // Project takes some 3D coordinates and transform them
+        // in 2D coordinates using the transformation matrix
+        public Vector3 Project(Vector3 coord, Matrix transMat) {
+            // transforming the coordinates
+            Vector3 point = Vector3.TransformCoordinate(coord, transMat);
+            // The transformed coordinates will be based on coordinate system
+            // starting on the center of the screen. But drawing on screen normally starts
+            // from top left. We then need to transform them again to have x:0, y:0 on top left.
+            float x = point.X * Bitmap.PixelWidth + Bitmap.PixelWidth / 2.0f;
+            float y = -point.Y * Bitmap.PixelHeight + Bitmap.PixelHeight / 2.0f;
+
+            return (new Vector3(x, y, point.Z));
+        }
+
         // Called to put a pixel on screen at a specific X,Y coordinates
         public void PutPixel(int x, int y, Color4 color) {
             // As we have a 1-D Array for our back buffer
@@ -70,35 +105,20 @@ namespace UWPEngine {
             BackBuffer[index + 3] = (byte)(color.Alpha * 255);
         }
 
-        // Project takes some 3D coordinates and transform them
-        // in 2D coordinates using the transformation matrix
-        public Vector2 Project(Vector3 coord, Matrix transMat) {
-            // transforming the coordinates
-            Vector3 point = Vector3.TransformCoordinate(coord, transMat);
-            // The transformed coordinates will be based on coordinate system
-            // starting on the center of the screen. But drawing on screen normally starts
-            // from top left. We then need to transform them again to have x:0, y:0 on top left.
-            float x = point.X * Bitmap.PixelWidth + Bitmap.PixelWidth / 2.0f;
-            float y = -point.Y * Bitmap.PixelHeight + Bitmap.PixelHeight / 2.0f;
-
-            return (new Vector2(x, y));
-        }
-
         // DrawPoint calls PutPixel but does the clipping operation before
-        public void DrawPoint(Vector2 point) {
+        public void DrawPoint(Vector2 point, Color4 color) {
             // Clipping what's visible on screen
             if (point.X >= 0
                 && point.Y >= 0
                 && point.X < Bitmap.PixelWidth
                 && point.Y < Bitmap.PixelHeight) {
 
-                PutPixel((int)point.X, (int)point.Y, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
+                PutPixel((int)point.X, (int)point.Y, color);
             }
         }
 
-        public void DrawLine(Vector2 pointFrom, Vector2 pointTo) {
+        public void DrawLine(Vector2 pointFrom, Vector2 pointTo, Color4 color) {
             // Bresenham’s line algorithm
-
             int fromX = (int)pointFrom.X;
             int fromY = (int)pointFrom.Y;
             int toX = (int)pointTo.X;
@@ -111,7 +131,7 @@ namespace UWPEngine {
             int err = dx - dy;
 
             while (true) {
-                DrawPoint(new Vector2(fromX, fromY));
+                DrawPoint(new Vector2(fromX, fromY), color);
 
                 if ((fromX == toX) && (fromY == toY)) {
                     break;
@@ -131,6 +151,54 @@ namespace UWPEngine {
             }
         }
 
+        public void DrawTriangle(Vector3 pointA, Vector3 pointB, Vector3 pointC, Color4 color) {
+            // Sorting the points in order to always have this order on screen p1, p2 & p3
+            // with p1 always up (thus having the Y the lowest possible to be near the top screen)
+            // then p2 between p1 & p3
+            if (pointA.Y > pointB.Y) {
+                (pointA, pointB) = (pointB, pointA);
+            }
+
+            if (pointB.Y > pointC.Y) {
+                (pointB, pointC) = (pointC, pointB);
+            }
+
+            if (pointA.Y > pointC.Y) {
+                (pointA, pointC) = (pointC, pointA);
+            }
+
+            // http://en.wikipedia.org/wiki/Slope
+            // Computing inverse slopes
+            float dPointAPointB = (pointB.Y - pointA.Y > 0)
+                ? ((pointB.X - pointA.X) / (pointB.Y - pointA.Y))
+                : 0;
+
+            float dPointAPointC = (pointC.Y - pointA.Y > 0)
+                ? ((pointC.X - pointA.X) / (pointC.Y - pointA.Y))
+                : 0;
+
+            // Case where triangles are <|
+            if (dPointAPointB > dPointAPointC) {
+                for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
+                    if (y < pointB.Y) {
+                        ProcessScanLine(y, pointA, pointC, pointA, pointB, color);
+                    } else {
+                        ProcessScanLine(y, pointA, pointC, pointB, pointC, color);
+                    }
+                }
+            }
+            // Case where triangles are |>
+            else {
+                for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
+                    if (y < pointB.Y) {
+                        ProcessScanLine(y, pointA, pointB, pointA, pointC, color);
+                    } else {
+                        ProcessScanLine(y, pointB, pointC, pointA, pointC, color);
+                    }
+                }
+            }
+        }
+
         // The main method of the engine that re-compute each vertex projection
         // during each frame
         public void Render() {
@@ -138,7 +206,7 @@ namespace UWPEngine {
             Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
 
             Matrix projectionMatrix =
-                Matrix.PerspectiveFovRH(0.78f, (float)Bitmap.PixelWidth / Bitmap.PixelHeight, 0.01f, 1.0f);
+                Matrix.PerspectiveFovRH(0.90f, (float)Bitmap.PixelWidth / Bitmap.PixelHeight, 0.01f, 1.0f);
 
             foreach (Mesh mesh in Scene.Meshes) {
                 // Beware to apply rotation before translation
@@ -148,18 +216,19 @@ namespace UWPEngine {
 
                 Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
+                int faceIndex = 0;
+                int meshTrianglesCount = mesh.Triangles.Length;
                 foreach (var face in mesh.Triangles) {
                     Vector3 vertexA = mesh.Vertices[face.VertexA];
                     Vector3 vertexB = mesh.Vertices[face.VertexB];
                     Vector3 vertexC = mesh.Vertices[face.VertexC];
 
-                    Vector2 pointA = Project(vertexA, transformMatrix);
-                    Vector2 pointB = Project(vertexB, transformMatrix);
-                    Vector2 pointC = Project(vertexC, transformMatrix);
+                    Vector3 pointA = Project(vertexA, transformMatrix);
+                    Vector3 pointB = Project(vertexB, transformMatrix);
+                    Vector3 pointC = Project(vertexC, transformMatrix);
 
-                    DrawLine(pointA, pointB);
-                    DrawLine(pointB, pointC);
-                    DrawLine(pointC, pointA);
+                    float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
+                    DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
                 }
             }
         }
