@@ -61,13 +61,13 @@
             Grid.Row="2"
             Grid.Column="0"
             x:Name="FrontBufferImage"
-            Source="{Binding Device.Scene.Bitmap}" />
+            Source="{Binding Scene.Bitmap}" />
 
         <ListView
             Background="DarkGray"
             Grid.Row="2"
             Grid.Column="1"
-            ItemsSource="{Binding Device.Scene.Meshes}">
+            ItemsSource="{Binding Scene.Meshes}">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <controls:MeshControl />
