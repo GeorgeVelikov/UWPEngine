@@ -1,4 +1,5 @@
-﻿using SharpDX;
+﻿using Amplifier;
+using SharpDX;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -11,7 +12,30 @@ namespace UWPEngine {
     public class Device : NotifyPropertyChangedBase {
         private Scene scene;
 
+        private OpenCLCompiler compilerGpu;
+        private Amplifier.Device physicalGpu;
+        private dynamic executionEngine;
+
         public Device() {
+            SetupGpu();
+        }
+
+        private void SetupGpu() {
+            compilerGpu = new OpenCLCompiler();
+
+            physicalGpu = compilerGpu.Devices
+                .Where(d => d.Type == DeviceType.GPU)
+                .FirstOrDefault();
+
+            if (physicalGpu == null) {
+                return;
+            }
+
+            compilerGpu.UseDevice(physicalGpu.ID);
+
+            compilerGpu.CompileKernel(typeof(GpuKernel));
+
+            executionEngine = compilerGpu.GetExec();
         }
 
         public Scene Scene {
@@ -41,18 +65,8 @@ namespace UWPEngine {
         public object[] LockBuffer => Scene.LockBuffer;
 
         public void Clear(byte r, byte g, byte b, byte a) {
-            Parallel.For(0, BackBuffer.Length / 4 - 1, i => {
-                int actualIndex = (i+1) * 4;
-
-                BackBuffer[actualIndex] = b;
-                BackBuffer[++actualIndex] = g;
-                BackBuffer[++actualIndex] = r;
-                BackBuffer[++actualIndex] = a;
-            });
-
-            Parallel.For(0, DepthBuffer.Length, index => {
-                DepthBuffer[index] = float.MaxValue;
-            });
+            executionEngine.ClearBackBuffer(BackBuffer, r, g, b, a);
+            executionEngine.ClearDepthBuffer(DepthBuffer);
         }
 
         // Once everything is ready, we can flush the back buffer
