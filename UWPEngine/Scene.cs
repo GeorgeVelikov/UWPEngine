@@ -7,6 +7,7 @@ namespace UWPEngine {
     public class Scene : NotifyPropertyChangedBase {
         private readonly byte[] backBuffer;
         private readonly float[] depthBuffer;
+        private readonly object[] lockBuffer;
 
         private Camera camera;
         private ObservableCollection<Mesh> meshes;
@@ -16,16 +17,28 @@ namespace UWPEngine {
             Camera = new Camera();
             Meshes = new ObservableCollection<Mesh>();
             Bitmap = new WriteableBitmap(720, 480);
+            BitmapWidth = bitmap.PixelWidth;
+            BitmapHeight = bitmap.PixelHeight;
 
             // the back buffer size is equal to the number of pixels to draw
             // on screen (width*height) * 4 (R,G,B & Alpha values).
             backBuffer = new byte[Bitmap.PixelWidth * Bitmap.PixelHeight * 4];
             depthBuffer = new float[Bitmap.PixelWidth * Bitmap.PixelHeight];
+            lockBuffer = new object[Bitmap.PixelWidth * Bitmap.PixelHeight];
+
+            for (var i = 0; i < lockBuffer.Length; i++) {
+                lockBuffer[i] = new object();
+            }
         }
 
         public byte[] BackBuffer => backBuffer;
 
         public float[] DepthBuffer => depthBuffer;
+
+        public object[] LockBuffer => lockBuffer;
+
+        public int BitmapWidth { get; set; }
+        public int BitmapHeight { get; set; }
 
         public Camera Camera {
             get => camera;

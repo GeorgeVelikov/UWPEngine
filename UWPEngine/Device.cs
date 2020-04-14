@@ -23,32 +23,36 @@ namespace UWPEngine {
 
                 if (scene != value) {
                     scene = value;
-                    OnPropertyChanged(nameof(Scene));
-                    OnPropertyChanged(nameof(Bitmap));
-                    OnPropertyChanged(nameof(BackBuffer));
-                    OnPropertyChanged(nameof(DepthBuffer));
+                    OnPropertyChanged(null);
                 }
             }
         }
 
         public WriteableBitmap Bitmap => Scene.Bitmap;
 
+        public int BitmapWidth => Scene.BitmapWidth;
+
+        public int BitmapHeight => Scene.BitmapHeight;
+
         public byte[] BackBuffer => Scene.BackBuffer;
 
         public float[] DepthBuffer => Scene.DepthBuffer;
 
-        public void Clear(byte r, byte g, byte b, byte a) {
-            for (var index = 0; index < BackBuffer.Length; index += 4) {
-                // BGRA is used by Windows instead by RGBA in HTML5
-                BackBuffer[index] = b;
-                BackBuffer[index + 1] = g;
-                BackBuffer[index + 2] = r;
-                BackBuffer[index + 3] = a;
-            }
+        public object[] LockBuffer => Scene.LockBuffer;
 
-            for (var index = 0; index < DepthBuffer.Length; index++) {
+        public void Clear(byte r, byte g, byte b, byte a) {
+            Parallel.For(0, BackBuffer.Length / 4 - 1, i => {
+                int actualIndex = (i+1) * 4;
+
+                BackBuffer[actualIndex] = b;
+                BackBuffer[++actualIndex] = g;
+                BackBuffer[++actualIndex] = r;
+                BackBuffer[++actualIndex] = a;
+            });
+
+            Parallel.For(0, DepthBuffer.Length, index => {
                 DepthBuffer[index] = float.MaxValue;
-            }
+            });
         }
 
         // Once everything is ready, we can flush the back buffer
@@ -98,8 +102,8 @@ namespace UWPEngine {
             // The transformed coordinates will be based on coordinate system
             // starting on the center of the screen. But drawing on screen normally starts
             // from top left. We then need to transform them again to have x:0, y:0 on top left.
-            float x = point.X * Bitmap.PixelWidth + Bitmap.PixelWidth / 2.0f;
-            float y = -point.Y * Bitmap.PixelHeight + Bitmap.PixelHeight / 2.0f;
+            float x = point.X * BitmapWidth + BitmapWidth / 2.0f;
+            float y = -point.Y * BitmapHeight + BitmapHeight / 2.0f;
 
             return (new Vector3(x, y, point.Z));
         }
@@ -109,19 +113,22 @@ namespace UWPEngine {
             // As we have a 1-D Array for our back buffer
             // we need to know the equivalent cell in 1-D based
             // on the 2D coordinates on screen
-            int depthBufferIndex = x + y * Bitmap.PixelWidth;
+            int depthBufferIndex = x + y * BitmapWidth;
             int backBufferIndex = depthBufferIndex * 4;
 
-            if (DepthBuffer[depthBufferIndex] < z) {
-                return;
+            lock (LockBuffer[depthBufferIndex]) {
+
+                if (DepthBuffer[depthBufferIndex] < z) {
+                    return;
+                }
+
+                DepthBuffer[depthBufferIndex] = z;
+
+                BackBuffer[backBufferIndex] = (byte)(color.Blue * 255);
+                BackBuffer[backBufferIndex + 1] = (byte)(color.Green * 255);
+                BackBuffer[backBufferIndex + 2] = (byte)(color.Red * 255);
+                BackBuffer[backBufferIndex + 3] = (byte)(color.Alpha * 255);
             }
-
-            DepthBuffer[depthBufferIndex] = z;
-
-            BackBuffer[backBufferIndex] = (byte)(color.Blue * 255);
-            BackBuffer[backBufferIndex + 1] = (byte)(color.Green * 255);
-            BackBuffer[backBufferIndex + 2] = (byte)(color.Red * 255);
-            BackBuffer[backBufferIndex + 3] = (byte)(color.Alpha * 255);
         }
 
         // DrawPoint calls PutPixel but does the clipping operation before
@@ -129,8 +136,8 @@ namespace UWPEngine {
             // Clipping what's visible on screen
             if (point.X >= 0
                 && point.Y >= 0
-                && point.X < Bitmap.PixelWidth
-                && point.Y < Bitmap.PixelHeight) {
+                && point.X < BitmapWidth
+                && point.Y < BitmapHeight) {
 
                 PutPixel((int)point.X, (int)point.Y, point.Z, color);
             }
@@ -215,7 +222,7 @@ namespace UWPEngine {
             Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
 
             Matrix projectionMatrix =
-                Matrix.PerspectiveFovRH(0.78f, (float)Bitmap.PixelWidth / Bitmap.PixelHeight, 0.01f, 1.0f);
+                Matrix.PerspectiveFovRH(0.78f, (float)BitmapWidth / BitmapHeight, 0.01f, 1.0f);
 
             foreach (Mesh mesh in Scene.Meshes) {
                 // Beware to apply rotation before translation
@@ -225,9 +232,11 @@ namespace UWPEngine {
 
                 Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
-                int faceIndex = 0;
                 int meshTrianglesCount = mesh.Triangles.Length;
-                foreach (var face in mesh.Triangles) {
+
+                Parallel.For(0, mesh.Triangles.Length, faceIndex => {
+                    Triangle face = mesh.Triangles[faceIndex];
+
                     Vector3 vertexA = mesh.Vertices[face.VertexA];
                     Vector3 vertexB = mesh.Vertices[face.VertexB];
                     Vector3 vertexC = mesh.Vertices[face.VertexC];
@@ -238,7 +247,7 @@ namespace UWPEngine {
 
                     float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
                     DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
-                }
+                });
             }
         }
     }
