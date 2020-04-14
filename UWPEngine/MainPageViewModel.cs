@@ -1,6 +1,7 @@
 ﻿using SharpDX;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UWPEngine.Models;
 using UWPEngine.Shapes;
 using UWPEngine.Utility;
 using Windows.Storage;

@@ -1,7 +1,6 @@
-﻿using System.Collections.Specialized;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
-namespace UWPEngine.Utility {
+namespace UWPEngine {
     public class NotifyPropertyChangedBase : INotifyPropertyChanged {
         public event PropertyChangedEventHandler PropertyChanged;
 

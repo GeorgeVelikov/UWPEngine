@@ -1,7 +1,6 @@
 ﻿using Amplifier.OpenCL;
-using SharpDX;
 
-namespace UWPEngine.Utility {
+namespace UWPEngine.OpenCL {
     internal class GpuKernel : OpenCLFunctions {
 
         [OpenCLKernel]

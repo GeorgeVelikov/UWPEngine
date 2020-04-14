@@ -1,7 +1,6 @@
 ﻿using SharpDX;
-using UWPEngine.Utility;
 
-namespace UWPEngine {
+namespace UWPEngine.Models {
     public class Camera : NotifyPropertyChangedBase {
         private Vector3 position;
         private Vector3 target;

@@ -1,5 +1,4 @@
 ﻿using SharpDX;
-using UWPEngine.Utility;
 
 namespace UWPEngine.Shapes {
 

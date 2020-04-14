@@ -3,7 +3,7 @@ using UWPEngine.Shapes;
 using UWPEngine.Utility;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace UWPEngine {
+namespace UWPEngine.Models {
     public class Scene : NotifyPropertyChangedBase {
         private readonly byte[] backBuffer;
         private readonly float[] depthBuffer;

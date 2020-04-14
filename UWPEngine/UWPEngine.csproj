@@ -119,7 +119,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Camera.cs" />
+    <Compile Include="Models\Camera.cs" />
     <Compile Include="Controls\MeshControl.xaml.cs">
       <DependentUpon>MeshControl.xaml</DependentUpon>
     </Compile>
@@ -127,19 +127,19 @@
       <DependentUpon>MeshControlList.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainPageViewModel.cs" />
-    <Compile Include="Scene.cs" />
+    <Compile Include="Models\Scene.cs" />
     <Compile Include="Shapes\Cube.cs" />
-    <Compile Include="Device.cs" />
+    <Compile Include="Models\Device.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Shapes\Mesh.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utility\GpuKernel.cs" />
+    <Compile Include="OpenCL\GpuKernel.cs" />
     <Compile Include="Utility\BabylonFile.cs" />
     <Compile Include="Utility\FileUtility.cs" />
     <Compile Include="Utility\MathUtility.cs" />
-    <Compile Include="Utility\NotifyPropertyChangedBase.cs" />
+    <Compile Include="NotifyPropertyChangedBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
