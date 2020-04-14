@@ -229,8 +229,7 @@ namespace UWPEngine {
             }
         }
 
-        // The main method of the engine that re-compute each vertex projection
-        // during each frame
+        // The main method of the engine that re-compute each vertex projection during each frame
         public void Render() {
             // To understand this part, please read the prerequisites resources
             Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
