@@ -7,14 +7,14 @@ namespace UWPEngine.Shapes {
         private string name;
         private Vector3 position;
         private Vector3 rotation;
-        private Vector3[] vertices;
+        private Vertex[] vertices;
         private Face[] faces;
 
         public Mesh(string name, int verticesCount, int facesCount) {
             Name = name;
             Position = Vector3.Zero;
             Rotation = Vector3.Zero;
-            Vertices = new Vector3[verticesCount];
+            Vertices = new Vertex[verticesCount];
             Faces = new Face[facesCount];
         }
 
@@ -48,7 +48,7 @@ namespace UWPEngine.Shapes {
             }
         }
 
-        public Vector3[] Vertices {
+        public Vertex[] Vertices {
             get => vertices;
             set {
                 if (vertices != value) {

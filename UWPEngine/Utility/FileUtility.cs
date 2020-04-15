@@ -35,15 +35,25 @@ namespace UWPEngine.Utility {
 
                 // Filling the Vertices array of our mesh first
                 for (int i = 0; i < babylonMesh.VerticesCount; i++) {
-                    mesh.Vertices[i] = new Vector3(
-                        x: babylonMesh.Positions[i * 3],
-                        y: babylonMesh.Positions[i * 3 + 1],
-                        z: babylonMesh.Positions[i * 3 + 2]
-                    );
+                    int xIndex = i * 3;
+                    int yIndex = i * 3 + 1;
+                    int zIndex = i * 3 + 2;
+
+                    mesh.Vertices[i].Coordinates = new Vector3 {
+                        X = babylonMesh.Positions[xIndex],
+                        Y = babylonMesh.Positions[yIndex],
+                        Z = babylonMesh.Positions[zIndex],
+                    };
+
+                    mesh.Vertices[i].Normal = new Vector3 {
+                        X = babylonMesh.Normals[xIndex],
+                        Y = babylonMesh.Normals[yIndex],
+                        Z = babylonMesh.Normals[zIndex],
+                    };
                 }
 
-                // Then filling the Faces array
                 for (int i = 0; i < babylonMesh.FacesCount; i++) {
+                    // filling the Faces array
                     mesh.Faces[i] = new Face {
                         VertexA = babylonMesh.Faces[i * 3],
                         VertexB = babylonMesh.Faces[i * 3 + 1],
@@ -52,8 +62,11 @@ namespace UWPEngine.Utility {
                 }
 
                 // Getting the position you've set in Blender
-                var position = babylonMesh.Position;
+                float[] position = babylonMesh.Position;
+                float[] rotation = babylonMesh.Rotation;
+
                 mesh.Position = new Vector3(position[0], position[1], position[2]);
+                mesh.Rotation = new Vector3(rotation[0], rotation[1], rotation[2]);
 
                 meshes.Add(mesh);
             }

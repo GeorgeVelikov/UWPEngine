@@ -14,6 +14,9 @@ namespace UWPEngine.Utility {
         [JsonProperty("position")]
         public float[] Position { get; set; }
 
+        [JsonProperty("rotation")]
+        public float[] Rotation { get; set; }
+
         [JsonProperty("positions")]
         public float[] Positions { get; set; }
 
@@ -26,7 +29,9 @@ namespace UWPEngine.Utility {
         [JsonProperty("indices")]
         public int[] Faces { get; set; }
 
+        // same as normals count
         public int VerticesCount => (Positions?.Count() ?? 0) / 3;
+        public int UVsCount => (UVs?.Count() ?? 0) / 3;
         public int FacesCount => (Faces?.Count() ?? 0) / 3;
     }
 }

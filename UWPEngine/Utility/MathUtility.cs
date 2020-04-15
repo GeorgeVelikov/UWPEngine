@@ -23,5 +23,16 @@ namespace UWPEngine.Utility {
                 x2: lineTo.X - lineFrom.X,
                 y2: lineTo.Y - lineFrom.Y);
         }
+
+        // Compute the cosine of the angle between the light vector and the normal vector
+        // Returns a value between 0 and 1
+        public static float ComputeNDotL(Vector3 vertex, Vector3 normal, Vector3 lightPosition) {
+            Vector3 lightDirection = lightPosition - vertex;
+
+            normal.Normalize();
+            lightDirection.Normalize();
+
+            return Math.Max(0, Vector3.Dot(normal, lightDirection));
+        }
     }
 }

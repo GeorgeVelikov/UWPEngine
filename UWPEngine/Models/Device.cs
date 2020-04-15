@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using UWPEngine.OpenCL;
+using UWPEngine.Structs;
 using UWPEngine.Utility;
 using Windows.UI.Xaml.Media.Imaging;
 
@@ -15,6 +16,7 @@ namespace UWPEngine.Models {
         private OpenCLCompiler compilerGpu;
         private Amplifier.Device physicalGpu;
         private dynamic executionEngine;
+        private object vertex;
 
         public Device() {
             SetupGpu();
@@ -93,13 +95,13 @@ namespace UWPEngine.Models {
                 int faceIndex = 0;
 
                 Parallel.ForEach(mesh.Faces, face => {
-                    Vector3 vertexA = mesh.Vertices[face.VertexA];
-                    Vector3 vertexB = mesh.Vertices[face.VertexB];
-                    Vector3 vertexC = mesh.Vertices[face.VertexC];
+                    Vertex vertexA = mesh.Vertices[face.VertexA];
+                    Vertex vertexB = mesh.Vertices[face.VertexB];
+                    Vertex vertexC = mesh.Vertices[face.VertexC];
 
-                    Vector3 pointA = Project(vertexA, transformMatrix);
-                    Vector3 pointB = Project(vertexB, transformMatrix);
-                    Vector3 pointC = Project(vertexC, transformMatrix);
+                    Vertex pointA = Project(vertexA, transformMatrix, worldMatrix);
+                    Vertex pointB = Project(vertexB, transformMatrix, worldMatrix);
+                    Vertex pointC = Project(vertexC, transformMatrix, worldMatrix);
 
                     float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
                     DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
@@ -120,16 +122,21 @@ namespace UWPEngine.Models {
 
         #region Rendering methods
 
-        private void ProcessScanLine(int y, Vector3 pointA, Vector3 pointB, Vector3 pointC, Vector3 pointD, Color4 color) {
+        private void ProcessScanLine(ScanLineData data, Vertex vertexA, Vertex vertexB, Vertex vertexC, Vertex vertexD, Color4 color) {
+            Vector3 pointA = vertexA.Coordinates;
+            Vector3 pointB = vertexB.Coordinates;
+            Vector3 pointC = vertexC.Coordinates;
+            Vector3 pointD = vertexD.Coordinates;
+
             // Thanks to current Y, we can compute the gradient to compute others values like
             // the starting X (sx) and ending X (ex) to draw between
             // if pa.Y == pb.Y or pc.Y == pd.Y, gradient is forced to 1
             var gradient1 = pointA.Y != pointB.Y
-                ? (y - pointA.Y) / (pointB.Y - pointA.Y)
+                ? (data.CurrentY - pointA.Y) / (pointB.Y - pointA.Y)
                 : 1;
 
             var gradient2 = pointC.Y != pointD.Y
-                ? (y - pointC.Y) / (pointD.Y - pointC.Y)
+                ? (data.CurrentY - pointC.Y) / (pointD.Y - pointC.Y)
                 : 1;
 
             int startingX = (int)MathUtility.Interpolate(pointA.X, pointB.X, gradient1);
@@ -144,21 +151,27 @@ namespace UWPEngine.Models {
 
                 float z = MathUtility.Interpolate(startingZ, endingZ, gradient);
 
-                DrawPoint(new Vector3(currentX, y, z), color);
+                DrawPoint(new Vector3(currentX, data.CurrentY, z), color * data.DotA);
             }
         }
 
         // Project takes some 3D coordinates and transform them in 2D coordinates using the transformation matrix
-        private Vector3 Project(Vector3 coord, Matrix transMat) {
-            // transforming the coordinates
-            Vector3 point = Vector3.TransformCoordinate(coord, transMat);
-            // The transformed coordinates will be based on coordinate system
+        private Vertex Project(Vertex vertex, Matrix transMat, Matrix world) {
+            // transforming the coordinates into 2D space
+            Vector3 point2d = Vector3.TransformCoordinate(vertex.Coordinates, transMat);
+
             // starting on the center of the screen. But drawing on screen normally starts
             // from top left. We then need to transform them again to have x:0, y:0 on top left.
-            float x = point.X * BitmapWidth + BitmapWidth / 2.0f;
-            float y = -point.Y * BitmapHeight + BitmapHeight / 2.0f;
+            float x = point2d.X * BitmapWidth + BitmapWidth / 2.0f;
+            float y = -point2d.Y * BitmapHeight + BitmapHeight / 2.0f;
 
-            return (new Vector3(x, y, -point.Z));
+            // transforming the coordinates & the normal to the vertex in the 3D world
+            // The transformed coordinates will be based on coordinate system
+            return new Vertex {
+                Coordinates = new Vector3(x, y, -point2d.Z),
+                Normal = Vector3.TransformCoordinate(vertex.Normal, world),
+                WorldCoordinates = Vector3.TransformCoordinate(vertex.Coordinates, world),
+            };
         }
 
         // Called to put a pixel on screen at a specific X,Y coordinates
@@ -196,39 +209,73 @@ namespace UWPEngine.Models {
             }
         }
 
-        private void DrawTriangle(Vector3 pointA, Vector3 pointB, Vector3 pointC, Color4 color) {
-            // Sorting the points in order to always have this order on screen p1, p2 & p3
+        private void DrawTriangle(Vertex vertexA, Vertex vertexB, Vertex vertexC, Color4 color) {
+            // Sorting the vertexs in order to always have this order on screen p1, p2 & p3
             // with p1 always up (thus having the Y the lowest possible to be near the top screen)
             // then p2 between p1 & p3
-            if (pointA.Y > pointB.Y) {
-                (pointA, pointB) = (pointB, pointA);
+            if (vertexA.Coordinates.Y > vertexB.Coordinates.Y) {
+                (vertexA, vertexB) = (vertexB, vertexA);
             }
 
-            if (pointB.Y > pointC.Y) {
-                (pointB, pointC) = (pointC, pointB);
+            if (vertexB.Coordinates.Y > vertexC.Coordinates.Y) {
+                (vertexB, vertexC) = (vertexC, vertexB);
             }
 
-            if (pointA.Y > pointB.Y) {
-                (pointA, pointB) = (pointB, pointA);
+            if (vertexA.Coordinates.Y > vertexB.Coordinates.Y) {
+                (vertexA, vertexB) = (vertexB, vertexA);
             }
+
+            Vector3 pointA = vertexA.Coordinates;
+            Vector3 pointB = vertexB.Coordinates;
+            Vector3 pointC = vertexC.Coordinates;
+
+            // Light position
+            Vector3 lightPosition = new Vector3(0, 5, 5);
+
+            float lightDotA = MathUtility.ComputeNDotL(vertexA.WorldCoordinates, vertexA.Normal, lightPosition);
+            float lightDotB = MathUtility.ComputeNDotL(vertexB.WorldCoordinates, vertexB.Normal, lightPosition);
+            float lightDotC = MathUtility.ComputeNDotL(vertexC.WorldCoordinates, vertexC.Normal, lightPosition);
+            // computing the cos of the angle between the light vector and the normal vector
+            // it will return a value between 0 and 1 that will be used as the intensity of the color
+            ScanLineData data = new ScanLineData();
 
             // Case where triangles are |>
             if (MathUtility.LineSide2D(pointB, pointA, pointC) > 0) {
                 for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
+                    data.CurrentY = y;
+
                     if (y < pointB.Y) {
-                        ProcessScanLine(y, pointA, pointC, pointA, pointB, color);
+                        data.DotA = lightDotA;
+                        data.DotB = lightDotC;
+                        data.DotC = lightDotA;
+                        data.DotD = lightDotB;
+                        ProcessScanLine(data, vertexA, vertexC, vertexA, vertexB, color);
                     } else {
-                        ProcessScanLine(y, pointA, pointC, pointB, pointC, color);
+                        data.DotA = lightDotA;
+                        data.DotB = lightDotC;
+                        data.DotC = lightDotB;
+                        data.DotD = lightDotC;
+                        ProcessScanLine(data, vertexA, vertexC, vertexB, vertexC, color);
                     }
                 }
             }
             // Case where triangles are <|
             else {
                 for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
+                    data.CurrentY = y;
+
                     if (y < pointB.Y) {
-                        ProcessScanLine(y, pointA, pointB, pointA, pointC, color);
+                        data.DotA = lightDotA;
+                        data.DotB = lightDotB;
+                        data.DotC = lightDotA;
+                        data.DotD = lightDotC;
+                        ProcessScanLine(data, vertexA, vertexB, vertexA, vertexC, color);
                     } else {
-                        ProcessScanLine(y, pointB, pointC, pointA, pointC, color);
+                        data.DotA = lightDotB;
+                        data.DotB = lightDotC;
+                        data.DotC = lightDotA;
+                        data.DotD = lightDotC;
+                        ProcessScanLine(data, vertexB, vertexC, vertexA, vertexC, color);
                     }
                 }
             }
