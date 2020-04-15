@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using UWPEngine.Shapes;
-using UWPEngine.Utility;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace UWPEngine.Models {
