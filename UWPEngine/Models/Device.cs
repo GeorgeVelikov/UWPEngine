@@ -159,7 +159,7 @@ namespace UWPEngine.Models {
             float x = point.X * BitmapWidth + BitmapWidth / 2.0f;
             float y = -point.Y * BitmapHeight + BitmapHeight / 2.0f;
 
-            return (new Vector3(x, y, point.Z));
+            return (new Vector3(x, y, -point.Z));
         }
 
         // Called to put a pixel on screen at a specific X,Y coordinates
