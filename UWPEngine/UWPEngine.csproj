@@ -138,6 +138,7 @@
     <Compile Include="OpenCL\GpuKernel.cs" />
     <Compile Include="Structs\Face.cs" />
     <Compile Include="Structs\ScanLineData.cs" />
+    <Compile Include="Structs\Vertex.cs" />
     <Compile Include="Utility\BabylonFile.cs" />
     <Compile Include="Utility\FileUtility.cs" />
     <Compile Include="Utility\MathUtility.cs" />
