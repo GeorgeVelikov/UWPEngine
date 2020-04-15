@@ -91,9 +91,6 @@ namespace UWPEngine.Models {
 
                 Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
-                int meshTrianglesCount = mesh.Faces.Length;
-                int faceIndex = 0;
-
                 Parallel.ForEach(mesh.Faces, face => {
                     Vertex vertexA = mesh.Vertices[face.VertexA];
                     Vertex vertexB = mesh.Vertices[face.VertexB];
@@ -103,8 +100,8 @@ namespace UWPEngine.Models {
                     Vertex pointB = Project(vertexB, transformMatrix, worldMatrix);
                     Vertex pointC = Project(vertexC, transformMatrix, worldMatrix);
 
-                    float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
-                    DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
+                    // White being the most lit area
+                    DrawTriangle(pointA, pointB, pointC, Color4.White);
                 });
             });
         }
