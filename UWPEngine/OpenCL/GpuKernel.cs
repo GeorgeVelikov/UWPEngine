@@ -4,7 +4,7 @@ namespace UWPEngine.OpenCL {
     internal class GpuKernel : OpenCLFunctions {
 
         [OpenCLKernel]
-        void ClearBackBuffer([Global]byte[] BackBuffer, byte r, byte g, byte b, byte a) {
+        public void ClearBackBuffer([Global]byte[] BackBuffer, byte r, byte g, byte b, byte a) {
             int i = get_global_id(0);
 
             // TODO: can I improve this?
@@ -19,7 +19,7 @@ namespace UWPEngine.OpenCL {
         }
 
         [OpenCLKernel]
-        void ClearDepthBuffer([Global]float[] DepthBuffer) {
+        public void ClearDepthBuffer([Global]float[] DepthBuffer) {
             int i = get_global_id(0);
             DepthBuffer[i] = float.MaxValue;
         }

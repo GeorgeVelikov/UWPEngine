@@ -21,23 +21,7 @@ namespace UWPEngine.Models {
             SetupGpu();
         }
 
-        private void SetupGpu() {
-            compilerGpu = new OpenCLCompiler();
-
-            physicalGpu = compilerGpu.Devices
-                .Where(d => d.Type == DeviceType.GPU)
-                .FirstOrDefault();
-
-            if (physicalGpu == null) {
-                return;
-            }
-
-            compilerGpu.UseDevice(physicalGpu.ID);
-
-            compilerGpu.CompileKernel(typeof(GpuKernel));
-
-            executionEngine = compilerGpu.GetExec();
-        }
+        #region Scene Properties
 
         public Scene Scene {
             get => scene;
@@ -65,13 +49,67 @@ namespace UWPEngine.Models {
 
         public object[] LockBuffer => Scene.LockBuffer;
 
+        #endregion
+
+        private void SetupGpu() {
+            compilerGpu = new OpenCLCompiler();
+
+            physicalGpu = compilerGpu.Devices
+                .Where(d => d.Type == DeviceType.GPU)
+                .FirstOrDefault();
+
+            if (physicalGpu == null) {
+                return;
+            }
+
+            compilerGpu.UseDevice(physicalGpu.ID);
+
+            compilerGpu.CompileKernel(typeof(GpuKernel));
+
+            executionEngine = compilerGpu.GetExec();
+        }
+
         public void Clear(byte r, byte g, byte b, byte a) {
             executionEngine.ClearBackBuffer(BackBuffer, r, g, b, a);
             executionEngine.ClearDepthBuffer(DepthBuffer);
         }
 
-        // Once everything is ready, we can flush the back buffer
-        // into the front buffer.
+        // The main method of the engine that re-compute each vertex projection during each frame
+        public void Render() {
+            // To understand this part, please read the prerequisites resources
+            Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
+
+            Matrix projectionMatrix =
+                Matrix.PerspectiveFovRH(0.78f, (float)BitmapWidth / BitmapHeight, 0.01f, 1.0f);
+
+            foreach (Mesh mesh in Scene.Meshes) {
+                // Beware to apply rotation before translation
+                Matrix worldMatrix =
+                    Matrix.RotationYawPitchRoll(mesh.Rotation.Y, mesh.Rotation.X, mesh.Rotation.Z)
+                    * Matrix.Translation(mesh.Position);
+
+                Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
+
+                int meshTrianglesCount = mesh.Triangles.Length;
+
+                Parallel.For(0, mesh.Triangles.Length, faceIndex => {
+                    Triangle face = mesh.Triangles[faceIndex];
+
+                    Vector3 vertexA = mesh.Vertices[face.VertexA];
+                    Vector3 vertexB = mesh.Vertices[face.VertexB];
+                    Vector3 vertexC = mesh.Vertices[face.VertexC];
+
+                    Vector3 pointA = Project(vertexA, transformMatrix);
+                    Vector3 pointB = Project(vertexB, transformMatrix);
+                    Vector3 pointC = Project(vertexC, transformMatrix);
+
+                    float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
+                    DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
+                });
+            }
+        }
+
+        // Once everything is ready, we can flush the back buffer into the front buffer.
         public void Present() {
 
             using (Stream stream = Bitmap.PixelBuffer.AsStream()) {
@@ -82,7 +120,9 @@ namespace UWPEngine.Models {
             Bitmap.Invalidate();
         }
 
-        void ProcessScanLine(int y, Vector3 pointA, Vector3 pointB, Vector3 pointC, Vector3 pointD, Color4 color) {
+        #region Rendering methods
+
+        private void ProcessScanLine(int y, Vector3 pointA, Vector3 pointB, Vector3 pointC, Vector3 pointD, Color4 color) {
             // Thanks to current Y, we can compute the gradient to compute others values like
             // the starting X (sx) and ending X (ex) to draw between
             // if pa.Y == pb.Y or pc.Y == pd.Y, gradient is forced to 1
@@ -111,7 +151,7 @@ namespace UWPEngine.Models {
         }
 
         // Project takes some 3D coordinates and transform them in 2D coordinates using the transformation matrix
-        public Vector3 Project(Vector3 coord, Matrix transMat) {
+        private Vector3 Project(Vector3 coord, Matrix transMat) {
             // transforming the coordinates
             Vector3 point = Vector3.TransformCoordinate(coord, transMat);
             // The transformed coordinates will be based on coordinate system
@@ -124,7 +164,7 @@ namespace UWPEngine.Models {
         }
 
         // Called to put a pixel on screen at a specific X,Y coordinates
-        public void PutPixel(int x, int y, float z, Color4 color) {
+        private void PutPixel(int x, int y, float z, Color4 color) {
             // As we have a 1-D Array for our back buffer
             // we need to know the equivalent cell in 1-D based
             // on the 2D coordinates on screen
@@ -147,7 +187,7 @@ namespace UWPEngine.Models {
         }
 
         // DrawPoint calls PutPixel but does the clipping operation before
-        public void DrawPoint(Vector3 point, Color4 color) {
+        private void DrawPoint(Vector3 point, Color4 color) {
             // Clipping what's visible on screen
             if (point.X >= 0
                 && point.Y >= 0
@@ -158,41 +198,7 @@ namespace UWPEngine.Models {
             }
         }
 
-        //public void DrawLine(Vector2 pointFrom, Vector2 pointTo, Color4 color) {
-        //    // Bresenham’s line algorithm
-        //    int fromX = (int)pointFrom.X;
-        //    int fromY = (int)pointFrom.Y;
-        //    int toX = (int)pointTo.X;
-        //    int toY = (int)pointTo.Y;
-
-        //    int dx = Math.Abs(toX - fromX);
-        //    int dy = Math.Abs(toY - fromY);
-        //    int sx = (fromX < toX) ? 1 : -1;
-        //    int sy = (fromY < toY) ? 1 : -1;
-        //    int err = dx - dy;
-
-        //    while (true) {
-        //        DrawPoint(new Vector2(fromX, fromY), color);
-
-        //        if ((fromX == toX) && (fromY == toY)) {
-        //            break;
-        //        }
-
-        //        int e2 = 2 * err;
-
-        //        if (e2 > -dy) {
-        //            err -= dy;
-        //            fromX += sx;
-        //        }
-
-        //        if (e2 < dx) {
-        //            err += dx;
-        //            fromY += sy;
-        //        }
-        //    }
-        //}
-
-        public void DrawTriangle(Vector3 pointA, Vector3 pointB, Vector3 pointC, Color4 color) {
+        private void DrawTriangle(Vector3 pointA, Vector3 pointB, Vector3 pointC, Color4 color) {
             // Sorting the points in order to always have this order on screen p1, p2 & p3
             // with p1 always up (thus having the Y the lowest possible to be near the top screen)
             // then p2 between p1 & p3
@@ -230,39 +236,6 @@ namespace UWPEngine.Models {
             }
         }
 
-        // The main method of the engine that re-compute each vertex projection during each frame
-        public void Render() {
-            // To understand this part, please read the prerequisites resources
-            Matrix viewMatrix = Matrix.LookAtLH(Scene.Camera.Position, Scene.Camera.Target, Vector3.UnitY);
-
-            Matrix projectionMatrix =
-                Matrix.PerspectiveFovRH(0.78f, (float)BitmapWidth / BitmapHeight, 0.01f, 1.0f);
-
-            foreach (Mesh mesh in Scene.Meshes) {
-                // Beware to apply rotation before translation
-                Matrix worldMatrix =
-                    Matrix.RotationYawPitchRoll(mesh.Rotation.Y, mesh.Rotation.X, mesh.Rotation.Z)
-                    * Matrix.Translation(mesh.Position);
-
-                Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
-
-                int meshTrianglesCount = mesh.Triangles.Length;
-
-                Parallel.For(0, mesh.Triangles.Length, faceIndex => {
-                    Triangle face = mesh.Triangles[faceIndex];
-
-                    Vector3 vertexA = mesh.Vertices[face.VertexA];
-                    Vector3 vertexB = mesh.Vertices[face.VertexB];
-                    Vector3 vertexC = mesh.Vertices[face.VertexC];
-
-                    Vector3 pointA = Project(vertexA, transformMatrix);
-                    Vector3 pointB = Project(vertexB, transformMatrix);
-                    Vector3 pointC = Project(vertexC, transformMatrix);
-
-                    float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
-                    DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
-                });
-            }
-        }
+        #endregion
     }
 }
