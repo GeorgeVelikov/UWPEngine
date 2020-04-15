@@ -31,23 +31,23 @@ namespace UWPEngine.Utility {
             BabylonFile babylonFile = JsonConvert.DeserializeObject<BabylonFile>(data);
 
             foreach (BabylonMesh babylonMesh in babylonFile.Meshes) {
-                Mesh mesh = new Mesh(babylonMesh.Name, babylonMesh.VerticesCount, babylonMesh.IndicesCount);
+                Mesh mesh = new Mesh(babylonMesh.Name, babylonMesh.VerticesCount, babylonMesh.FacesCount);
 
                 // Filling the Vertices array of our mesh first
                 for (int i = 0; i < babylonMesh.VerticesCount; i++) {
                     mesh.Vertices[i] = new Vector3(
-                        x: babylonMesh.Vertices[i * 3],
-                        y: babylonMesh.Vertices[i * 3 + 1],
-                        z: babylonMesh.Vertices[i * 3 + 2]
+                        x: babylonMesh.Positions[i * 3],
+                        y: babylonMesh.Positions[i * 3 + 1],
+                        z: babylonMesh.Positions[i * 3 + 2]
                     );
                 }
 
                 // Then filling the Faces array
-                for (int i = 0; i < babylonMesh.IndicesCount; i++) {
+                for (int i = 0; i < babylonMesh.FacesCount; i++) {
                     mesh.Faces[i] = new Face {
-                        VertexA = babylonMesh.Indices[i * 3],
-                        VertexB = babylonMesh.Indices[i * 3 + 1],
-                        VertexC = babylonMesh.Indices[i * 3 + 2],
+                        VertexA = babylonMesh.Faces[i * 3],
+                        VertexB = babylonMesh.Faces[i * 3 + 1],
+                        VertexC = babylonMesh.Faces[i * 3 + 2],
                     };
                 }
 

@@ -15,12 +15,18 @@ namespace UWPEngine.Utility {
         public float[] Position { get; set; }
 
         [JsonProperty("positions")]
-        public float[] Vertices { get; set; }
+        public float[] Positions { get; set; }
+
+        [JsonProperty("normals")]
+        public float[] Normals { get; set; }
+
+        [JsonProperty("uvs")]
+        public float[] UVs { get; set; }
 
         [JsonProperty("indices")]
-        public int[] Indices { get; set; }
+        public int[] Faces { get; set; }
 
-        public int VerticesCount => (Vertices?.Count() ?? 0) / 3;
-        public int IndicesCount => (Indices?.Count() ?? 0) / 3;
+        public int VerticesCount => (Positions?.Count() ?? 0) / 3;
+        public int FacesCount => (Faces?.Count() ?? 0) / 3;
     }
 }
