@@ -34,7 +34,7 @@ namespace UWPEngine {
 
         // Rendering loop handler
         public void CompositionTarget_Rendering(object sender, object e) {
-            Device.Clear(0, 0, 0, 255);
+            Device.Clear(75, 75, 75, 255);
 
             // TODO: temporary rotation of all meshes until Move & Rotate functions/modes have been added
             foreach (Mesh mesh in Scene.Meshes) {
