@@ -136,6 +136,8 @@
     <Compile Include="Shapes\Mesh.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="OpenCL\GpuKernel.cs" />
+    <Compile Include="Structs\Face.cs" />
+    <Compile Include="Structs\ScanLineData.cs" />
     <Compile Include="Utility\BabylonFile.cs" />
     <Compile Include="Utility\FileUtility.cs" />
     <Compile Include="Utility\MathUtility.cs" />

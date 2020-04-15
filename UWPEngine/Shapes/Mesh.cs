@@ -1,12 +1,7 @@
 ﻿using SharpDX;
+using UWPEngine.Structs;
 
 namespace UWPEngine.Shapes {
-
-    public struct Triangle {
-        public int VertexA;
-        public int VertexB;
-        public int VertexC;
-    }
 
     public class Mesh : NotifyPropertyChangedBase {
         private string name;
@@ -16,11 +11,11 @@ namespace UWPEngine.Shapes {
         public Mesh(string name, int verticesCount, int facesCount) {
             Name = name;
             Vertices = new Vector3[verticesCount];
-            Triangles = new Triangle[facesCount];
+            Faces = new Face[facesCount];
         }
 
         public Vector3[] Vertices { get; private set; }
-        public Triangle[] Triangles { get; set; }
+        public Face[] Faces { get; set; }
 
         public string Name {
             get => name;

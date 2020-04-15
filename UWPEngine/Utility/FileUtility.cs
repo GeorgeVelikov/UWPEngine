@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UWPEngine.Shapes;
+using UWPEngine.Structs;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 
@@ -43,7 +44,7 @@ namespace UWPEngine.Utility {
 
                 // Then filling the Faces array
                 for (int i = 0; i < babylonMesh.IndicesCount; i++) {
-                    mesh.Triangles[i] = new Triangle {
+                    mesh.Faces[i] = new Face {
                         VertexA = babylonMesh.Indices[i * 3],
                         VertexB = babylonMesh.Indices[i * 3 + 1],
                         VertexC = babylonMesh.Indices[i * 3 + 2],
