@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using UWPEngine.Shapes;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -11,15 +12,19 @@ namespace UWPEngine {
             DataContext = new MainPageViewModel();
             InitializeComponent();
 
-            Loaded += Page_Loaded;
+            Window.Current.VisibilityChanged += Visibility_Changed;
+        }
+
+        private void Visibility_Changed(object sender, VisibilityChangedEventArgs e) {
+            if (e.Visible) {
+                ResumeRendering();
+                return;
+            }
+
+            PauseRendering();
         }
 
         public MainPageViewModel ViewModel => (MainPageViewModel)DataContext;
-
-        private void Page_Loaded(object sender, RoutedEventArgs e) {
-            // Registering to the XAML rendering loop.
-            ResumeRendering();
-        }
 
         private async void OpenButton_Click(object sender, RoutedEventArgs e) {
             await PauseRenderingAndDoFunction(async () => await ViewModel.OpenFileAndLoadMesh());
