@@ -82,7 +82,7 @@ namespace UWPEngine.Models {
             Matrix projectionMatrix =
                 Matrix.PerspectiveFovRH(0.78f, (float)BitmapWidth / BitmapHeight, 0.01f, 1.0f);
 
-            foreach (Mesh mesh in Scene.Meshes) {
+            Parallel.ForEach(Scene.Meshes, mesh => {
                 // Beware to apply rotation before translation
                 Matrix worldMatrix =
                     Matrix.RotationYawPitchRoll(mesh.Rotation.Y, mesh.Rotation.X, mesh.Rotation.Z)
@@ -106,7 +106,7 @@ namespace UWPEngine.Models {
                     float color = 0.25f + (faceIndex++ % meshTrianglesCount) * 0.75f / meshTrianglesCount;
                     DrawTriangle(pointA, pointB, pointC, new Color4(color, color, color, 1));
                 });
-            }
+            });
         }
 
         // Once everything is ready, we can flush the back buffer into the front buffer.
