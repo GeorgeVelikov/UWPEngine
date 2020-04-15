@@ -91,10 +91,9 @@ namespace UWPEngine.Models {
                 Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
                 int meshTrianglesCount = mesh.Triangles.Length;
+                int faceIndex = 0;
 
-                Parallel.For(0, mesh.Triangles.Length, faceIndex => {
-                    Triangle face = mesh.Triangles[faceIndex];
-
+                Parallel.ForEach(mesh.Triangles, face => {
                     Vector3 vertexA = mesh.Vertices[face.VertexA];
                     Vector3 vertexB = mesh.Vertices[face.VertexB];
                     Vector3 vertexC = mesh.Vertices[face.VertexC];

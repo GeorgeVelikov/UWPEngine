@@ -9,16 +9,11 @@ using Windows.Storage;
 namespace UWPEngine {
     public class MainPageViewModel : NotifyPropertyChangedBase {
         private Device device;
-        private Mesh mesh;
 
         public MainPageViewModel() {
             Device = new Device {
                 Scene = new Scene(),
             };
-
-            mesh = new Cube();
-
-            Scene.Meshes.Add(mesh);
         }
 
         public Device Device {
@@ -41,14 +36,17 @@ namespace UWPEngine {
         public void CompositionTarget_Rendering(object sender, object e) {
             Device.Clear(0, 0, 0, 255);
 
-            // rotating slightly the cube during each frame rendered
-            mesh.Rotation = new Vector3(
-                mesh.Rotation.X + 0.01f,
-                mesh.Rotation.Y + 0.01f,
-                mesh.Rotation.Z);
+            // TODO: temporary rotation of all meshes until Move & Rotate functions/modes have been added
+            foreach (Mesh mesh in Scene.Meshes) {
+                mesh.Rotation = new Vector3(
+                    mesh.Rotation.X + 0.01f,
+                    mesh.Rotation.Y + 0.01f,
+                    mesh.Rotation.Z);
+            }
 
             // Doing the various matrix operations
             Device.Render();
+
             // Flushing the back buffer into the front buffer
             Device.Present();
         }
