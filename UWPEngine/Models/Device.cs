@@ -92,16 +92,12 @@ namespace UWPEngine.Models {
                 Matrix transformMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
                 Parallel.ForEach(mesh.Faces, face => {
-                    Vertex vertexA = mesh.Vertices[face.VertexA];
-                    Vertex vertexB = mesh.Vertices[face.VertexB];
-                    Vertex vertexC = mesh.Vertices[face.VertexC];
-
-                    Vertex pointA = Project(vertexA, transformMatrix, worldMatrix);
-                    Vertex pointB = Project(vertexB, transformMatrix, worldMatrix);
-                    Vertex pointC = Project(vertexC, transformMatrix, worldMatrix);
+                    Vertex vertexA = Project(mesh.Vertices[face.VertexA], transformMatrix, worldMatrix);
+                    Vertex vertexB = Project(mesh.Vertices[face.VertexB], transformMatrix, worldMatrix);
+                    Vertex vertexC = Project(mesh.Vertices[face.VertexC], transformMatrix, worldMatrix);
 
                     // White being the most lit area
-                    DrawTriangle(pointA, pointB, pointC, Color4.White);
+                    DrawTriangle(vertexA, vertexB, vertexC, Color4.White);
                 });
             });
         }
