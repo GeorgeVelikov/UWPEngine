@@ -1,4 +1,5 @@
 ﻿using SharpDX;
+using System;
 using UWPEngine.Structs;
 
 namespace UWPEngine.Shapes {
@@ -7,6 +8,7 @@ namespace UWPEngine.Shapes {
         private string name;
         private Vector3 position;
         private Vector3 rotation;
+        private Vector3 scale;
         private Vertex[] vertices;
         private Face[] faces;
 
@@ -14,6 +16,7 @@ namespace UWPEngine.Shapes {
             Name = name;
             Position = Vector3.Zero;
             Rotation = Vector3.Zero;
+            Scale = new Vector3(1, 1, 1);
             Vertices = new Vertex[verticesCount];
             Faces = new Face[facesCount];
         }
@@ -48,6 +51,15 @@ namespace UWPEngine.Shapes {
             }
         }
 
+        public Vector3 Scale {
+            get => scale;
+            set {
+                if (scale != value) {
+                    scale = value;
+                    OnPropertyChanged(nameof(Scale));
+                }
+            }
+        }
         public Vertex[] Vertices {
             get => vertices;
             set {

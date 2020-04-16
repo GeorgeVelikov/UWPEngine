@@ -17,6 +17,9 @@ namespace UWPEngine.Utility {
         [JsonProperty("rotation")]
         public float[] Rotation { get; set; }
 
+        [JsonProperty("scaling")]
+        public float[] Scale { get; set; }
+
         [JsonProperty("positions")]
         public float[] Positions { get; set; }
 

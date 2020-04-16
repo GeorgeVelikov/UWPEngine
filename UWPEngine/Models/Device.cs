@@ -16,7 +16,6 @@ namespace UWPEngine.Models {
         private OpenCLCompiler compilerGpu;
         private Amplifier.Device physicalGpu;
         private dynamic executionEngine;
-        private object vertex;
 
         public Device() {
             SetupGpu();
@@ -138,13 +137,17 @@ namespace UWPEngine.Models {
             float startingZ = MathUtility.Interpolate(pointA.Z, pointB.Z, gradient1);
             float endingZ = MathUtility.Interpolate(pointC.Z, pointD.Z, gradient2);
 
+            float startLight = MathUtility.Interpolate(data.DotA, data.DotB, gradient1);
+            float endLight = MathUtility.Interpolate(data.DotC, data.DotD, gradient2);
+
             // drawing a line from left (sx) to right (ex)
             for (int currentX = startingX; currentX < endingX; currentX++) {
                 float gradient = (currentX - startingX) / (float)(endingX - startingX);
 
                 float z = MathUtility.Interpolate(startingZ, endingZ, gradient);
+                float dotLight = MathUtility.Interpolate(startLight, endLight, gradient);
 
-                DrawPoint(new Vector3(currentX, data.CurrentY, z), color * data.DotA);
+                DrawPoint(new Vector3(currentX, data.CurrentY, z), color * dotLight);
             }
         }
 
@@ -157,11 +160,12 @@ namespace UWPEngine.Models {
             // from top left. We then need to transform them again to have x:0, y:0 on top left.
             float x = point2d.X * BitmapWidth + BitmapWidth / 2.0f;
             float y = -point2d.Y * BitmapHeight + BitmapHeight / 2.0f;
+            float z = -point2d.Z;
 
             // transforming the coordinates & the normal to the vertex in the 3D world
             // The transformed coordinates will be based on coordinate system
             return new Vertex {
-                Coordinates = new Vector3(x, y, -point2d.Z),
+                Coordinates = new Vector3(x, y, z),
                 Normal = Vector3.TransformCoordinate(vertex.Normal, world),
                 WorldCoordinates = Vector3.TransformCoordinate(vertex.Coordinates, world),
             };
@@ -223,7 +227,7 @@ namespace UWPEngine.Models {
             Vector3 pointC = vertexC.Coordinates;
 
             // Light position
-            Vector3 lightPosition = new Vector3(0, 5, 5);
+            Vector3 lightPosition = new Vector3(0, 10, 10);
 
             float lightDotA = MathUtility.ComputeNDotL(vertexA.WorldCoordinates, vertexA.Normal, lightPosition);
             float lightDotB = MathUtility.ComputeNDotL(vertexB.WorldCoordinates, vertexB.Normal, lightPosition);
@@ -234,7 +238,7 @@ namespace UWPEngine.Models {
 
             // Case where triangles are |>
             if (MathUtility.LineSide2D(pointB, pointA, pointC) > 0) {
-                for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
+                for (int y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
                     data.CurrentY = y;
 
                     if (y < pointB.Y) {
@@ -254,7 +258,7 @@ namespace UWPEngine.Models {
             }
             // Case where triangles are <|
             else {
-                for (var y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
+                for (int y = (int)pointA.Y; y <= (int)pointC.Y; y++) {
                     data.CurrentY = y;
 
                     if (y < pointB.Y) {

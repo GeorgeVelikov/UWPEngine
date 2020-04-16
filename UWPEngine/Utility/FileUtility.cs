@@ -64,9 +64,11 @@ namespace UWPEngine.Utility {
                 // Getting the position you've set in Blender
                 float[] position = babylonMesh.Position;
                 float[] rotation = babylonMesh.Rotation;
+                float[] scale = babylonMesh.Scale;
 
                 mesh.Position = new Vector3(position[0], position[1], position[2]);
                 mesh.Rotation = new Vector3(rotation[0], rotation[1], rotation[2]);
+                mesh.Scale = new Vector3(scale[0], scale[1], scale[2]);
 
                 meshes.Add(mesh);
             }
